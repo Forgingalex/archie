@@ -1,6 +1,6 @@
 # Archie
 
-Archie is an AI-powered API agent that converts natural-language requests into authenticated API calls and returns structured JSON. You describe what you want in plain English — "Get the current Bitcoin price in Nigerian naira" — and Archie figures out which APIs to call, runs them in parallel, and hands back a consistent response envelope. It runs on Node.js with Fastify, uses Groq (Llama 3) as its planning brain, and anchors agent identity and reputation on Arc Testnet via ERC-8004 contracts. Paid API access is handled through x402 micropayments settled in USDC via Circle wallets.
+Archie is an AI-powered API agent that converts natural-language requests into authenticated API calls and returns structured JSON. You describe what you want in plain English like "Get the current Bitcoin price in Nigerian naira" and Archie figures out which APIs to call, runs them in parallel, and hands back a consistent response envelope. It runs on Node.js with Fastify, uses Groq (Llama 3) as its planning brain, and anchors agent identity and reputation on Arc Testnet via ERC-8004 contracts. Paid API access is handled through x402 micropayments settled in USDC via Circle wallets.
 
 ## Quick Start
 
@@ -99,7 +99,7 @@ curl http://localhost:3000/info
 
 ## How It Works
 
-When a query arrives, the orchestrator calls the Groq LLM planner with a system prompt that lists available connectors and their actions. The planner returns a JSON plan — which connectors to call, which actions to invoke, and what parameters to pass. The orchestrator then runs all connector calls in parallel, checking the in-memory cache first for each one. Results are merged into the response envelope and returned. Arc identity and reputation events are written asynchronously after the response is sent, so they never add latency.
+When a query arrives, the orchestrator calls the Groq LLM planner with a system prompt that lists available connectors and their actions. The planner returns a JSON plan, which connectors to call, which actions to invoke, and what parameters to pass. The orchestrator then runs all connector calls in parallel, checking the in-memory cache first for each one. Results are merged into the response envelope and returned. Arc identity and reputation events are written asynchronously after the response is sent, so they never add latency.
 
 ## Connectors
 
