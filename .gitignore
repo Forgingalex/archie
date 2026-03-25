@@ -5,3 +5,4 @@ dist/
 logs/
 .DS_Store
 coverage/
+.vercel
