@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent: #FF8A00;
+  --up: #22C55E;
+  --down: #EF4444;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--sans);
+  background: #000;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── BACKGROUND ─────────────────────────────────────────── */
+
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  animation: bg-in 800ms ease forwards;
+}
+
+@keyframes bg-in {
+  to { opacity: 1; }
+}
+
+#bg-img {
+  position: absolute;
+  inset: 0;
+  background: url('bg.jpg') center/cover no-repeat;
+}
+
+#bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.70) 0%,
+    rgba(0,0,0,0.25) 40%,
+    rgba(0,0,0,0.25) 60%,
+    rgba(0,0,0,0.60) 100%
+  );
+}
+
+/* ── VIEWPORT WRAPPER ────────────────────────────────────── */
+
+#viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* ── TERMINAL ────────────────────────────────────────────── */
+
+#terminal {
+  width: 90vw;
+  max-width: 760px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10,10,10,0.75);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: term-in 700ms var(--ease) 200ms forwards;
+}
+
+@keyframes term-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── TITLE BAR ───────────────────────────────────────────── */
+
+#titlebar {
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+  padding: 0 16px;
+}
+
+#dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0;
+}
+
+.dot:nth-child(1) { background: #FF5F57; animation: dot-pop 200ms var(--ease) 500ms forwards; }
+.dot:nth-child(2) { background: #FFBD2E; animation: dot-pop 200ms var(--ease) 550ms forwards; }
+.dot:nth-child(3) { background: #27C93F; animation: dot-pop 200ms var(--ease) 600ms forwards; }
+
+@keyframes dot-pop {
+  to { transform: scale(1); opacity: 1; }
+}
+
+#title-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  transition: text-shadow 600ms ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+#title-center.glow {
+  text-shadow: 0 0 8px rgba(255,138,0,0.4);
+}
+
+#title-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #525252;
+}
+
+#net-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: net-pulse 2s ease-in-out infinite;
+}
+
+@keyframes net-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.4); opacity: 0.4; }
+}
+
+/* ── TERMINAL BODY ───────────────────────────────────────── */
+
+#body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  scroll-behavior: smooth;
+  position: relative;
+}
+
+#body::-webkit-scrollbar { width: 4px; }
+#body::-webkit-scrollbar-track { background: transparent; }
+#body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* ── WELCOME STATE ───────────────────────────────────────── */
+
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(80vh - 44px - 76px - 48px);
+  gap: 12px;
+  text-align: center;
+  opacity: 0;
+  animation: fade-up 400ms var(--ease) 700ms forwards;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#welcome h1 {
+  font-size: 36px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+#welcome p {
+  font-size: 15px;
+  color: #666;
+}
+
+#chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.chip {
+  background: rgba(255,255,255,0.06);
+  color: #888;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  font-family: var(--sans);
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.chip:hover {
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.chip:active {
+  transform: scale(0.95) translateY(0);
+}
+
+.chip.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease,
+              opacity 300ms var(--ease), transform 300ms var(--ease);
+}
+
+/* ── CONVERSATION ────────────────────────────────────────── */
+
+#convo {
+  display: none;
+  flex-direction: column;
+  gap: 32px;
+}
+
+#convo.active { display: flex; }
+
+/* ── QUERY LINE ──────────────────────────────────────────── */
+
+.query-line {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 16px;
+  opacity: 0;
+  transform: translateY(4px);
+  animation: slide-in 200ms var(--ease) forwards;
+}
+
+@keyframes slide-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.query-line .prompt { color: var(--accent); margin-right: 8px; }
+
+/* ── RESPONSE ────────────────────────────────────────────── */
+
+.response-wrap { display: flex; flex-direction: column; }
+
+.loading-indicator {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: #555;
+  animation: thinking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.7; }
+}
+
+.response-content { color: #aaa; }
+
+/* ── CRYPTO ──────────────────────────────────────────────── */
+
+.crypto-items { display: flex; flex-direction: column; gap: 16px; }
+
+.crypto-separator {
+  height: 1px;
+  background: rgba(255,255,255,0.04);
+  margin: 0;
+}
+
+.coin-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #555;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.coin-price {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.coin-change {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 10px;
+}
+
+.coin-change.up  { color: var(--up); }
+.coin-change.down { color: var(--down); }
+
+.coin-mcap {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #555;
+  margin-top: 2px;
+}
+
+/* ── FOREX ───────────────────────────────────────────────── */
+
+.forex-result {
+  font-family: var(--mono);
+  font-size: 22px;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.forex-rate {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
+}
+
+/* ── NEWS ────────────────────────────────────────────────── */
+
+.news-items { display: flex; flex-direction: column; gap: 10px; }
+
+.news-title {
+  font-size: 14px;
+  color: #aaa;
+  line-height: 1.4;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  transition: color 150ms ease;
+}
+
+.news-title:hover { color: #fff; }
+
+.news-meta { font-size: 12px; color: #555; margin-top: 2px; }
+
+/* ── BLOCKCHAIN ──────────────────────────────────────────── */
+
+.chain-addr {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #777;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: #555;
+  line-height: 0;
+  transition: color 150ms ease;
+}
+
+.copy-btn:hover { color: #fff; }
+
+.chain-balance {
+  font-family: var(--mono);
+  font-size: 24px;
+  color: #fff;
+}
+
+/* ── SECTION SEPARATOR ───────────────────────────────────── */
+
+.section-sep {
+  height: 1px;
+  background: rgba(255,255,255,0.04);
+  margin: 16px 0;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+
+/* ── METADATA ────────────────────────────────────────────── */
+
+.response-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #333;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.response-meta.visible { opacity: 1; }
+
+/* ── ERROR ───────────────────────────────────────────────── */
+
+.error-line {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--down);
+}
+
+/* ── INPUT BAR ───────────────────────────────────────────── */
+
+#inputbar {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#prompt-sign {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--accent);
+  flex-shrink: 0;
+  user-select: none;
+  transition: opacity 1.5s ease;
+}
+
+#prompt-sign.focused {
+  animation: prompt-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes prompt-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+#query-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: #fff;
+  caret-color: var(--accent);
+  resize: none;
+  min-height: 24px;
+  max-height: 80px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+#query-input::placeholder { color: #444; }
+#query-input::-webkit-scrollbar { width: 3px; }
+#query-input::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+
+#send-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 150ms ease, filter 150ms ease, opacity 150ms ease;
+}
+
+#send-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  filter: brightness(1.15);
+}
+
+#send-btn:active:not(:disabled) { transform: scale(0.95); }
+
+#send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+#send-btn svg { display: block; }
+
+#send-btn .spin {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+#send-btn.loading svg  { display: none; }
+#send-btn.loading .spin { display: block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  #viewport { padding: 0; }
+
+  #terminal {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    max-width: none;
+  }
+
+  #welcome h1 { font-size: 28px; }
+  .coin-price  { font-size: 22px; }
+  .chain-balance { font-size: 20px; }
+  .forex-result  { font-size: 18px; }
+  #body { padding: 16px; }
+  #inputbar { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div id="bg">
+  <div id="bg-img"></div>
+  <div id="bg-overlay"></div>
+</div>
+
+<!-- VIEWPORT -->
+<div id="viewport">
+  <div id="terminal">
+
+    <!-- TITLE BAR -->
+    <div id="titlebar">
+      <div id="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div id="title-center">Archie</div>
+      <div id="title-right">
+        <span>Arc Testnet</span>
+        <div id="net-dot"></div>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div id="body">
+
+      <!-- WELCOME -->
+      <div id="welcome">
+        <h1>Archie</h1>
+        <p>AI agent on Arc</p>
+        <div id="chips">
+          <button class="chip" data-q="Bitcoin price in naira">Bitcoin price in naira</button>
+          <button class="chip" data-q="Latest tech news">Latest tech news</button>
+          <button class="chip" data-q="ETH balance of 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">ETH balance of vitalik.eth</button>
+          <button class="chip" data-q="Compare BTC and ETH prices">Compare BTC and ETH</button>
+        </div>
+      </div>
+
+      <!-- CONVERSATION -->
+      <div id="convo"></div>
+
+    </div>
+
+    <!-- INPUT BAR -->
+    <div id="inputbar">
+      <span id="prompt-sign">&gt;</span>
+      <textarea
+        id="query-input"
+        rows="1"
+        placeholder="ask anything..."
+        autocomplete="off"
+        spellcheck="false"
+      ></textarea>
+      <button id="send-btn" disabled title="Send">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1v12M7 1L2.5 5.5M7 1L11.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="spin"></div>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── ELEMENTS ─────────────────────────────────────────── */
+  const body      = document.getElementById('body');
+  const welcome   = document.getElementById('welcome');
+  const convo     = document.getElementById('convo');
+  const queryInp  = document.getElementById('query-input');
+  const sendBtn   = document.getElementById('send-btn');
+  const promptSign = document.getElementById('prompt-sign');
+  const titleCenter = document.getElementById('title-center');
+  const chips     = document.querySelectorAll('.chip');
+
+  let started = false;
+  let busy    = false;
+
+  /* ── CHIP STAGGER ENTRANCE ────────────────────────────── */
+  chips.forEach((chip, i) => {
+    setTimeout(() => chip.classList.add('visible'), 900 + i * 80);
+  });
+
+  /* ── INPUT AUTO-RESIZE ────────────────────────────────── */
+  function resizeInput() {
+    queryInp.style.height = 'auto';
+    queryInp.style.height = Math.min(queryInp.scrollHeight, 80) + 'px';
+  }
+
+  queryInp.addEventListener('input', () => {
+    resizeInput();
+    sendBtn.disabled = queryInp.value.trim().length === 0 || busy;
+  });
+
+  queryInp.addEventListener('focus', () => promptSign.classList.add('focused'));
+  queryInp.addEventListener('blur',  () => promptSign.classList.remove('focused'));
+
+  queryInp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); trySubmit(); }
+  });
+
+  sendBtn.addEventListener('click', trySubmit);
+
+  /* ── CHIPS ────────────────────────────────────────────── */
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      queryInp.value = chip.dataset.q;
+      resizeInput();
+      sendBtn.disabled = false;
+      trySubmit();
+    });
+  });
+
+  /* ── SUBMIT ───────────────────────────────────────────── */
+  function trySubmit() {
+    const q = queryInp.value.trim();
+    if (!q || busy) return;
+    submit(q);
+  }
+
+  async function submit(query) {
+    busy = true;
+    sendBtn.disabled = true;
+    sendBtn.classList.add('loading');
+    queryInp.value = '';
+    resizeInput();
+    queryInp.placeholder = 'thinking...';
+    queryInp.style.animation = 'thinking-pulse 1.2s ease-in-out infinite';
+
+    // Dismiss welcome
+    if (!started) {
+      started = true;
+      welcome.style.transition = 'opacity 250ms ease';
+      welcome.style.opacity = '0';
+      setTimeout(() => { welcome.style.display = 'none'; }, 250);
+      convo.classList.add('active');
+    }
+
+    // Exchange wrapper
+    const exchange = document.createElement('div');
+    convo.appendChild(exchange);
+
+    // Query line
+    const qLine = document.createElement('div');
+    qLine.className = 'query-line';
+    qLine.innerHTML = `<span class="prompt">&gt;</span>${escHtml(query)}`;
+    exchange.appendChild(qLine);
+
+    // Loading dots
+    const loadEl = document.createElement('div');
+    loadEl.className = 'response-wrap';
+    loadEl.innerHTML = '<div class="loading-indicator">...</div>';
+    exchange.appendChild(loadEl);
+
+    scrollDown();
+
+    let json;
+    try {
+      const res = await fetch('/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      json = await res.json();
+    } catch {
+      json = { status: 'error', data: { message: 'Network error — could not reach Archie.' } };
+    }
+
+    loadEl.remove();
+    await renderResponse(json, exchange);
+    glowTitle();
+
+    busy = false;
+    queryInp.placeholder = 'ask anything...';
+    queryInp.style.animation = '';
+    sendBtn.classList.remove('loading');
+    sendBtn.disabled = queryInp.value.trim().length === 0;
+  }
+
+  /* ── RENDER RESPONSE ──────────────────────────────────── */
+  async function renderResponse(json, exchange) {
+    const wrap = document.createElement('div');
+    wrap.className = 'response-wrap';
+    exchange.appendChild(wrap);
+
+    const content = document.createElement('div');
+    content.className = 'response-content';
+    wrap.appendChild(content);
+
+    const meta = json.meta || {};
+    const data = json.data || {};
+
+    if (json.status === 'error') {
+      content.innerHTML = `<div class="error-line">x ${escHtml(data.message || 'Something went wrong.')}</div>`;
+      scrollDown();
+      return;
+    }
+
+    // Collect renderable sections from data keys
+    // data shape: { crypto: {...}, forex: {...}, news: {...}, blockchain: {...}, ... }
+    const sections = [];
+    const keys = Object.keys(data);
+
+    // Errors first (keys ending in _error)
+    const errorKeys = keys.filter(k => k.endsWith('_error'));
+    errorKeys.forEach(k => {
+      const msg = typeof data[k] === 'string' ? data[k] : (data[k].message || JSON.stringify(data[k]));
+      sections.push({ label: k.replace('_error', ''), html: `<div class="error-line">x ${escHtml(msg)}</div>`, isText: false });
+    });
+
+    // Known typed sections
+    const handled = new Set(errorKeys);
+
+    if (data.crypto && typeof data.crypto === 'object') {
+      sections.push({ label: 'crypto', html: buildCrypto(data.crypto), isText: false });
+      handled.add('crypto');
+    }
+
+    if (data.forex && typeof data.forex === 'object') {
+      sections.push({ label: 'forex', html: buildForex(data.forex), isText: false });
+      handled.add('forex');
+    }
+
+    if (data.news) {
+      // news may be { articles: [...] } or an array directly
+      const newsData = Array.isArray(data.news) ? { articles: data.news } : data.news;
+      sections.push({ label: 'news', html: buildNews(newsData), isText: false });
+      handled.add('news');
+    }
+
+    if (data.blockchain && typeof data.blockchain === 'object') {
+      sections.push({ label: 'blockchain', html: buildBlockchain(data.blockchain), isText: false });
+      handled.add('blockchain');
+    }
+
+    if (data.twitter && typeof data.twitter === 'object') {
+      sections.push({ label: 'twitter', html: buildNews(data.twitter), isText: false });
+      handled.add('twitter');
+    }
+
+    // Unhandled keys — render as readable key-value, never raw JSON
+    keys.filter(k => !handled.has(k)).forEach(k => {
+      sections.push({ label: k, html: buildGeneric(data[k]), isText: typeof data[k] === 'string' });
+    });
+
+    // If data had no recognized keys but itself is flat (e.g. top-level connector shape)
+    // detect legacy flat shapes as fallback
+    if (sections.length === 0) {
+      if (hasCryptoPrices(data)) {
+        sections.push({ label: '', html: buildCrypto(data), isText: false });
+      } else if (data.from || data.rate) {
+        sections.push({ label: '', html: buildForex(data), isText: false });
+      } else if (Array.isArray(data.articles)) {
+        sections.push({ label: '', html: buildNews(data), isText: false });
+      } else if (data.address) {
+        sections.push({ label: '', html: buildBlockchain(data), isText: false });
+      } else {
+        sections.push({ label: '', html: buildGeneric(data), isText: true });
+      }
+    }
+
+    const needsLabels = sections.filter(s => s.label).length > 1;
+
+    for (let i = 0; i < sections.length; i++) {
+      const sec = sections[i];
+
+      if (i > 0) {
+        content.insertAdjacentHTML('beforeend', '<div class="section-sep"></div>');
+      }
+
+      if (needsLabels && sec.label) {
+        content.insertAdjacentHTML('beforeend', `<div class="section-label">${escHtml(sec.label)}</div>`);
+      }
+
+      const secEl = document.createElement('div');
+      content.appendChild(secEl);
+
+      if (sec.isText) {
+        // Typewriter for prose text
+        await typewriterRender(secEl, sec.html);
+      } else {
+        // Instant render for structured data, then count-up
+        secEl.innerHTML = sec.html;
+        runCountUp(secEl);
+      }
+
+      scrollDown();
+    }
+
+    // Meta line
+    const metaParts = [];
+    const sources = meta.sources || [];
+    if (sources.length) metaParts.push(sources.join(', '));
+    if (meta.latencyMs) metaParts.push((meta.latencyMs / 1000).toFixed(1) + 's');
+    if (meta.cached) metaParts.push('cached');
+    if (metaParts.length) {
+      const metaEl = document.createElement('div');
+      metaEl.className = 'response-meta';
+      metaEl.textContent = metaParts.join(' · ');
+      wrap.appendChild(metaEl);
+      requestAnimationFrame(() => metaEl.classList.add('visible'));
+    }
+
+    scrollDown();
+  }
+
+  /* ── TYPEWRITER ───────────────────────────────────────── */
+  async function typewriterRender(container, html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    container.innerHTML = '';
+    await walkNodes(tmp, container);
+  }
+
+  async function walkNodes(src, dest) {
+    for (const node of src.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const words = node.textContent.split(/(\s+)/);
+        for (const part of words) {
+          await new Promise(r => setTimeout(r, 28));
+          dest.appendChild(document.createTextNode(part));
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const clone = document.createElement(node.tagName);
+        for (const attr of node.attributes) clone.setAttribute(attr.name, attr.value);
+        dest.appendChild(clone);
+        await walkNodes(node, clone);
+      }
+    }
+  }
+
+  /* ── COUNT-UP ANIMATION ───────────────────────────────── */
+  function runCountUp(container) {
+    // Mark elements whose sole text content is a price/number for count-up
+    const candidates = container.querySelectorAll('.coin-price, .chain-balance, .forex-result');
+    candidates.forEach(el => {
+      const raw = el.textContent.trim();
+      // Extract the numeric part (strip $, commas, spaces, currency suffixes)
+      const numStr = raw.replace(/[,$\s]/g, '').replace(/[A-Z]+$/, '');
+      const target = parseFloat(numStr);
+      if (isNaN(target) || target === 0) return;
+
+      const prefix  = raw.startsWith('$') ? '$' : '';
+      const suffix  = raw.replace(/[^A-Z]/g, ''); // e.g. "ETH"
+      const useCommas = target >= 1000;
+      const decimals  = numStr.includes('.') ? numStr.split('.')[1].length : 0;
+
+      const start = performance.now();
+      const dur   = 450;
+
+      function tick(now) {
+        const t      = Math.min((now - start) / dur, 1);
+        const eased  = 1 - Math.pow(1 - t, 3);
+        const val    = eased * target;
+        const fmted  = prefix + formatNum(val, decimals, useCommas) + (suffix ? ' ' + suffix : '');
+        el.textContent = fmted;
+        if (t < 1) requestAnimationFrame(tick);
+        else el.textContent = raw;
+      }
+
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /* ── BUILDERS ─────────────────────────────────────────── */
+
+  function hasCryptoPrices(data) {
+    return typeof data === 'object' && data !== null &&
+      Object.values(data).some(v => v && typeof v === 'object' && 'usd' in v);
+  }
+
+  // data.crypto shape: { bitcoin: { usd, usd_24h_change, usd_market_cap }, ... }
+  function buildCrypto(coins) {
+    const items = [];
+    Object.entries(coins).forEach(([coin, info], i) => {
+      if (!info || typeof info !== 'object') return;
+      const usd    = info.usd ?? info.priceUsd ?? 0;
+      const change = info.usd_24h_change ?? info.changePercent24Hr ?? null;
+      const mcap   = info.usd_market_cap ?? info.marketCapUsd ?? null;
+
+      const priceStr = usd >= 1
+        ? '$' + Number(usd).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+        : '$' + Number(usd).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 });
+
+      let changeHtml = '';
+      if (change != null) {
+        const pct = Number(change);
+        const cls  = pct >= 0 ? 'up' : 'down';
+        const arr  = pct >= 0 ? '↑' : '↓';
+        changeHtml = `<span class="coin-change ${cls}">${arr} ${Math.abs(pct).toFixed(2)}%</span>`;
+      }
+
+      const mcapHtml = mcap
+        ? `<div class="coin-mcap">MCap ${fmtLarge(Number(mcap))}</div>` : '';
+
+      if (i > 0) items.push('<div class="crypto-separator"></div>');
+      items.push(`<div>
+        <div class="coin-label">${escHtml(coin)}</div>
+        <div>
+          <span class="coin-price">${priceStr}</span>
+          ${changeHtml}
+        </div>
+        ${mcapHtml}
+      </div>`);
+    });
+
+    return items.length
+      ? `<div class="crypto-items">${items.join('')}</div>`
+      : '<div class="error-line">x no price data</div>';
+  }
+
+  // data.forex shape: { from, to, amount, rate, result }
+  function buildForex(d) {
+    const from   = d.from   || '';
+    const to     = d.to     || '';
+    const rate   = d.rate   || 0;
+    const amount = d.amount;
+    const result = d.result;
+
+    let mainLine = '';
+    if (result != null && !isNaN(Number(result)) && amount != null && !isNaN(Number(amount))) {
+      const amtStr = Number(amount).toLocaleString('en-US', { maximumFractionDigits: 2 });
+      const resStr = Number(result).toLocaleString('en-US', { maximumFractionDigits: 0 });
+      mainLine = `<div class="forex-result">${amtStr} ${escHtml(from)} = ${resStr} ${escHtml(to)}</div>`;
+    } else if (rate) {
+      const rStr = Number(rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+      mainLine = `<div class="forex-result">1 ${escHtml(from)} = ${rStr} ${escHtml(to)}</div>`;
+    }
+
+    const rateNote = (rate && amount != null && result != null)
+      ? `<div class="forex-rate">1 ${escHtml(from)} = ${Number(rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${escHtml(to)}</div>`
+      : '';
+
+    return mainLine + rateNote;
+  }
+
+  // data.news shape: { articles: [{title, url, source, description, publishedAt}] }
+  //              or: { tweets: [{id, text, author, created_at}] }
+  function buildNews(d) {
+    const articles = d.articles || d.tweets || d.results || [];
+    if (!articles.length) return buildGeneric(d);
+
+    const items = articles.slice(0, 6).map(a => {
+      const title  = a.title || a.text || 'Untitled';
+      const src    = a.source || a.sourceName || a.author || '';
+      const url    = a.url || null;
+      const titleEl = url
+        ? `<a class="news-title" href="${escAttr(url)}" target="_blank" rel="noopener">${escHtml(title)}</a>`
+        : `<div class="news-title" style="cursor:default">${escHtml(title)}</div>`;
+      return `<div>${titleEl}${src ? `<div class="news-meta">${escHtml(src)}</div>` : ''}</div>`;
+    });
+
+    return `<div class="news-items">${items.join('')}</div>`;
+  }
+
+  // data.blockchain shape: { address, balance, balanceEth, transactions: [] }
+  function buildBlockchain(d) {
+    const addr    = d.address || '';
+    const balance = d.balance ?? d.balanceEth ?? null;
+    const txns    = Array.isArray(d.transactions) ? d.transactions : [];
+
+    const addrHtml = addr
+      ? `<div class="chain-addr">
+          <span>${truncAddr(addr)}</span>
+          <button class="copy-btn" title="Copy address" onclick="navigator.clipboard.writeText('${escAttr(addr)}')">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="4" y="4" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M1 8V1h7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+         </div>` : '';
+
+    let balHtml = '';
+    if (balance != null) {
+      const fmt = typeof balance === 'number'
+        ? balance.toFixed(6)
+        : String(balance);
+      balHtml = `<div class="chain-balance">${fmt} ETH</div>`;
+    }
+
+    let txHtml = '';
+    if (txns.length) {
+      const rows = txns.slice(0, 5).map(t => {
+        const hash  = t.hash ? t.hash.slice(0, 8) + '…' + t.hash.slice(-6) : '—';
+        const val   = t.valueEth != null ? Number(t.valueEth).toFixed(6) + ' ETH'
+                    : t.value   != null ? String(t.value) + ' ETH'
+                    : '—';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px">
+          <span style="font-family:var(--mono);color:#666">${escHtml(hash)}</span>
+          <span style="font-family:var(--mono);color:#aaa">${escHtml(val)}</span>
+        </div>`;
+      });
+      txHtml = `<div style="margin-top:12px">${rows.join('')}</div>`;
+    }
+
+    const result = addrHtml + balHtml + txHtml;
+    return result || buildGeneric(d);
+  }
+
+  // Generic key-value renderer — never falls back to raw JSON
+  function buildGeneric(d) {
+    if (d == null) return '<span style="color:#555">—</span>';
+    if (typeof d === 'string') {
+      return `<span style="color:#aaa;font-size:14px;line-height:1.6">${escHtml(d)}</span>`;
+    }
+    if (typeof d === 'number' || typeof d === 'boolean') {
+      return `<span style="font-family:var(--mono);color:#fff">${escHtml(String(d))}</span>`;
+    }
+    if (Array.isArray(d)) {
+      // Render array items as a list
+      const items = d.slice(0, 10).map(item =>
+        `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:#aaa">${escHtml(typeof item === 'object' ? JSON.stringify(item) : String(item))}</div>`
+      );
+      return `<div>${items.join('')}</div>`;
+    }
+    // Object: render key-value pairs
+    const rows = Object.entries(d).map(([k, v]) => {
+      const valStr = v == null ? '—'
+        : typeof v === 'object' ? JSON.stringify(v)
+        : String(v);
+      return `<div style="display:flex;gap:16px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px">
+        <span style="font-family:var(--mono);color:#444;min-width:120px;flex-shrink:0">${escHtml(k)}</span>
+        <span style="color:#aaa;word-break:break-word">${escHtml(valStr)}</span>
+      </div>`;
+    });
+    return `<div>${rows.join('')}</div>`;
+  }
+
+  /* ── TITLE GLOW ───────────────────────────────────────── */
+  function glowTitle() {
+    titleCenter.classList.add('glow');
+    setTimeout(() => titleCenter.classList.remove('glow'), 600);
+  }
+
+  /* ── SCROLL ───────────────────────────────────────────── */
+  function scrollDown() {
+    setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50);
+  }
+
+  /* ── AGENT INFO ───────────────────────────────────────── */
+  fetch('/info').then(r => r.ok ? r.json() : null).then(info => {
+    if (!info) return;
+    const id = info.agentId || info.walletAddress || null;
+    if (id) {
+      const el = document.getElementById('title-right');
+      const span = document.createElement('span');
+      span.style.cssText = 'font-size:10px;color:#3a3a3a;margin-right:8px;';
+      span.textContent = id.slice(0, 8) + '…';
+      el.prepend(span);
+    }
+  }).catch(() => {});
+
+  /* ── UTILITIES ────────────────────────────────────────── */
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escAttr(s) {
+    return String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function truncAddr(a) {
+    return a.length > 20 ? a.slice(0, 8) + '…' + a.slice(-6) : a;
+  }
+
+  function fmtLarge(n) {
+    if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9)  return '$' + (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6)  return '$' + (n / 1e6).toFixed(2) + 'M';
+    return '$' + n.toLocaleString('en-US');
+  }
+
+  function formatNum(n, decimals, useCommas) {
+    if (useCommas) {
+      return n.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+    return n.toFixed(decimals);
+  }
+
+})();
+</script>
+</body>
+</html>

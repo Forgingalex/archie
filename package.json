@@ -1,0 +1,44 @@
+{
+  "name": "archie",
+  "version": "0.1.0",
+  "description": "AI agent that converts natural-language requests into authenticated API calls",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx --env-file=.env src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "register-agent": "tsx --env-file=.env scripts/register-agent.ts"
+  },
+  "keywords": [
+    "arc",
+    "ai-agent",
+    "x402",
+    "erc-8004",
+    "usdc"
+  ],
+  "author": "Alexander & Brother",
+  "license": "MIT",
+  "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "^6.0.0",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "@fastify/static": "^9.0.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0",
+    "fastify": "^5.0.0",
+    "groq-sdk": "^0.8.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.1.3",
+    "uuid": "^10.0.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
