@@ -35,19 +35,19 @@ class ConnectorRegistry {
   toolDescriptions(): string {
     return Array.from(this.connectors.values())
       .map((c) => {
-        const actions = this.getActions(c.config.name);
+        const actions = this.getActionDescriptions(c.config.name);
         return `- **${c.config.name}**: ${c.config.description}. Actions: ${actions.join(", ")}. Cost: ${c.config.cost}.`;
       })
       .join("\n");
   }
 
-  private getActions(name: string): string[] {
+  private getActionDescriptions(name: string): string[] {
     const actionMap: Record<string, string[]> = {
-      crypto: ["getPrice", "getMarketData", "search"],
-      forex: ["getRates", "convert"],
-      news: ["headlines", "search"],
-      twitter: ["search", "userTweets"],
-      blockchain: ["getBalance", "getTransactions"],
+      crypto: ["getPrice(coins,currencies)", "getMarketData(coin)", "search(query)"],
+      forex: ["getRates(base,targets)", "convert(from,to,amount)"],
+      news: ["headlines(category)", "search(query)"],
+      twitter: ["search(query)", "userTweets(userId)"],
+      blockchain: ["getBalance(address)", "getTransactions(address)"],
     };
     return actionMap[name] || ["execute"];
   }

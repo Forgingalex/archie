@@ -21,8 +21,13 @@ export async function handleRequest(input: string): Promise<AgentResponse> {
   }
 
   if (planResult.tools.length === 0) {
+    if (planResult.confidence >= 0.5) {
+      return buildResponse(requestId, "success", {
+        message: planResult.intent
+      }, [], startTime);
+    }
     return buildResponse(requestId, "error", {
-      message: "I couldn't determine which APIs to call for your request.",
+      message: "I'm not sure what you need. Try asking for a crypto price, currency conversion, news, or a wallet balance.",
       intent: planResult.intent,
     }, [], startTime);
   }

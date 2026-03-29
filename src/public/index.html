@@ -765,6 +765,17 @@ body {
       return;
     }
 
+    // Conversational response — plain text message with no connector data
+    const connectorKeys = ['crypto', 'forex', 'news', 'blockchain', 'twitter'];
+    if (typeof data.message === 'string' && !connectorKeys.some(k => k in data)) {
+      const msgEl = document.createElement('div');
+      msgEl.style.cssText = 'font-size:15px;color:#cccccc;line-height:1.6;';
+      content.appendChild(msgEl);
+      await typewriterRender(msgEl, escHtml(data.message));
+      scrollDown();
+      return;
+    }
+
     // Collect renderable sections from data keys
     // data shape: { crypto: {...}, forex: {...}, news: {...}, blockchain: {...}, ... }
     const sections = [];
