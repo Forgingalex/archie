@@ -107,11 +107,15 @@ BLOCKCHAIN TOOL SELECTION:
 
 PAID DATA (x402 micropayments via GoldRush):
 The paiddata connector costs 0.001 USDC per request, paid autonomously via x402 to GoldRush (premium blockchain data by Covalent).
+
+EXPLICIT TRIGGERS — match these FIRST, before applying any other rule:
+If the user says any of these: "premium market intel", "market intel", "premium data", "paid data", "market overview", "market snapshot", "premium market data", "show me premium", "premium intel" — use paiddata.getData action. These are explicit requests for the premium paid endpoint. Confidence must be >= 0.9.
+
 Supported actions:
 - paiddata.getTokenBalances: detailed multi-token portfolio with USD values. Use when user asks for "token balances", "what tokens does X hold", "portfolio", "token holdings"
 - paiddata.getNFTs: NFT portfolio by collection. Use when user asks for "NFTs", "nft holdings", "what NFTs does X have"
 - paiddata.getTransactionHistory: rich transaction history with USD values, timestamps, from/to. Use when user asks for "transaction history", "full transaction list", "all transactions", "detailed tx history"
-- paiddata.getData: general premium market intel (fear & greed, BTC dominance, market overview). Use when asked for "premium data", "market intel", "fear and greed", "market overview"
+- paiddata.getData: general premium market intel (fear & greed, BTC dominance, market overview). Use when asked for "premium data", "market intel", "fear and greed", "market overview", "market snapshot", "premium market intel", "show me premium"
 
 PAID vs FREE decision:
 - Simple ETH balance → use free blockchain.getBalance
