@@ -16,6 +16,7 @@ export const config = {
 
   arcAgentWalletId: process.env.ARC_AGENT_WALLET_ID || "",
   arcValidatorWalletId: process.env.ARC_VALIDATOR_WALLET_ID || "",
+  arcAgentId: process.env.ARC_AGENT_ID || "",
 
   coingeckoApiKey: process.env.COINGECKO_API_KEY || "",
   twitterBearerToken: process.env.TWITTER_BEARER_TOKEN || "",

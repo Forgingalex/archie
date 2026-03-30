@@ -1,5 +1,5 @@
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
-import { createPublicClient, http, parseAbiItem } from "viem";
+import { createPublicClient, http, parseAbiItem, keccak256, toHex } from "viem";
 import { config } from "../config/env.js";
 import type { ArcAgentIdentity, ReputationEvent } from "../types/index.js";
 
@@ -32,9 +32,10 @@ async function pollTransaction(
   client: ReturnType<typeof initiateDeveloperControlledWalletsClient>,
   txId: string,
   label: string,
+  maxPolls = 30,
 ): Promise<string | null> {
   const TERMINAL = new Set(["COMPLETE", "FAILED", "CANCELLED", "DENIED"]);
-  const MAX_POLLS = 30;
+  const MAX_POLLS = maxPolls;
   const INTERVAL_MS = 3_000;
 
   for (let i = 0; i < MAX_POLLS; i++) {
@@ -158,19 +159,25 @@ export async function recordReputation(
   try {
     console.log(`[arc] recording reputation: agentId=${agentId} score=${score} tag="${tag}"`);
 
+    // keccak256 of the tag string, used as the bytes32 identifier
+    const tagHash = keccak256(toHex(tag));
+
     const { data: txData } = await client.createContractExecutionTransaction({
       idempotencyKey: crypto.randomUUID(),
       walletId: config.arcValidatorWalletId,
       contractAddress: REPUTATION_REGISTRY,
-      abiFunctionSignature: "giveFeedback(uint256,int256,string)",
-      abiParameters: [agentId, score, tag],
+      // Full ReputationRegistry ABI: agentId, score (int128), decimals (uint8),
+      // tag, empty description/uri/extra fields, tagHash (bytes32)
+      abiFunctionSignature: "giveFeedback(uint256,int128,uint8,string,string,string,string,bytes32)",
+      abiParameters: [agentId, String(score), "0", tag, "", "", "", tagHash],
       fee: { type: "level", config: { feeLevel: "MEDIUM" } },
     });
 
     const txId = txData?.id;
     if (!txId) throw new Error("createContractExecutionTransaction returned no transaction id");
 
-    const txHash = await pollTransaction(client, txId, "giveFeedback");
+    // 30s max for reputation events (10 polls × 3s) — never block the response
+    const txHash = await pollTransaction(client, txId, "giveFeedback", 10);
     const timestamp = new Date().toISOString();
 
     if (!txHash) {

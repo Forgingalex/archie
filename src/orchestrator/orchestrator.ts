@@ -2,6 +2,8 @@ import { v4 as uuidv4 } from "uuid";
 import { plan } from "./planner.js";
 import { registry } from "../connectors/registry.js";
 import { cache, cacheKey } from "../cache/cache.js";
+import { recordReputation } from "../identity/arc.js";
+import { config } from "../config/env.js";
 import type { AgentResponse, ConnectorResult } from "../types/index.js";
 
 const MAX_RETRIES = 2;
@@ -134,7 +136,19 @@ export async function handleRequest(input: string): Promise<AgentResponse> {
   // Propagate the first x402 payment made (if any) to the response meta.
   const paymentResult = results.find((r) => r.paymentMade);
 
-  return buildResponse(requestId, status, mergedData, results, startTime, paymentResult?.paymentMade);
+  const response = buildResponse(requestId, status, mergedData, results, startTime, paymentResult?.paymentMade);
+
+  // Fire-and-forget onchain reputation after paid requests — never blocks the response.
+  if (response.meta.cost?.paid && config.arcAgentId) {
+    const reputationScore = response.status === "success" ? 100 : 50;
+    const provider = paymentResult?.paymentMade?.provider ?? "unknown";
+    const tag = `x402_payment_${provider}`;
+    recordReputation(config.arcAgentId, reputationScore, tag).catch((err: unknown) => {
+      console.error("[reputation] async record failed:", err instanceof Error ? err.message : String(err));
+    });
+  }
+
+  return response;
 }
 
 // Handles both getPrice format ({ bitcoin: { usd: number } })
