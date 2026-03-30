@@ -105,6 +105,14 @@ BLOCKCHAIN TOOL SELECTION:
 - If the user asks for "history", "activity", "transactions", "tx", or "recent transfers" → use blockchain.getTransactions
 - If unclear between balance and transactions, default to getBalance (more commonly wanted)
 
+PAID DATA (x402 micropayments):
+The paiddata connector costs 0.001 USDC per request, paid autonomously via x402.
+- Use paiddata.getData() when the user asks for: "premium data", "paid data", "market intelligence", "market intel", "fear and greed index", "btc dominance", "market overview", "market summary"
+- Also use it if they ask for enriched/detailed market data beyond a simple price check
+- PREFER free connectors (crypto, forex, news) when they can answer the question adequately
+- Only use paiddata when specifically asked for premium/paid data OR when the user explicitly wants market overview/intelligence
+- Example triggers: "show me premium market data", "get market intel", "fear and greed", "market dominance", "paid data demo"
+
 NEWS SAFETY:
 - When searching for news, use the exact keywords the user provided. Do not summarize or invent news in the intent field.
 - Never generate fake article titles or sources. Only the news connector returns real articles.
@@ -186,6 +194,7 @@ PARAMETER FORMATS:
 - blockchain.getTransactions: { "address": "0x..." }
 - twitter.search: { "query": "bitcoin" }
 - twitter.userTweets: { "userId": "44196397" }
+- paiddata.getData: {}
 
 Category options for news.headlines: business, technology, sports, health, science, entertainment, general`;
 

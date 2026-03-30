@@ -26,6 +26,11 @@ export const config = {
   // Optional gateway API key. When set, all /agent and /ask requests must
   // carry "Authorization: Bearer <key>". Leave empty to disable auth (dev mode).
   archieApiKey: process.env.ARCHIE_API_KEY || "",
+
+  // x402 EOA payment wallet (separate from Circle identity wallets)
+  // Generate with: npx tsx scripts/generate-wallet.ts
+  x402PrivateKey: process.env.X402_PRIVATE_KEY || "",
+  x402Network: process.env.X402_NETWORK || "base-sepolia",
 } as const;
 
 export function validateConfig(): string[] {
@@ -34,7 +39,10 @@ export function validateConfig(): string[] {
     warnings.push("GROQ_API_KEY is not set — planner will not work");
   }
   if (!config.circleApiKey || !config.circleEntitySecret) {
-    warnings.push("CIRCLE_API_KEY or CIRCLE_ENTITY_SECRET not set — x402 payments and Arc identity unavailable");
+    warnings.push("CIRCLE_API_KEY or CIRCLE_ENTITY_SECRET not set — Arc identity unavailable");
+  }
+  if (!config.x402PrivateKey) {
+    warnings.push("X402_PRIVATE_KEY not set — paid data connector unavailable (run: npx tsx scripts/generate-wallet.ts)");
   }
   return warnings;
 }

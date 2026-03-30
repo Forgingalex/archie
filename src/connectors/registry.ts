@@ -4,6 +4,7 @@ import { ForexConnector } from "./forex.js";
 import { NewsConnector } from "./news.js";
 import { TwitterConnector } from "./twitter.js";
 import { BlockchainConnector } from "./blockchain.js";
+import { PaidDataConnector } from "./paiddata.js";
 
 class ConnectorRegistry {
   private connectors = new Map<string, IConnector>();
@@ -14,6 +15,7 @@ class ConnectorRegistry {
     this.register(new NewsConnector());
     this.register(new TwitterConnector());
     this.register(new BlockchainConnector());
+    this.register(new PaidDataConnector());
   }
 
   register(connector: IConnector): void {
@@ -48,6 +50,7 @@ class ConnectorRegistry {
       news: ["headlines(category)", "search(query)"],
       twitter: ["search(query)", "userTweets(userId)"],
       blockchain: ["getBalance(address)", "getTransactions(address)"],
+      paiddata: ["getData()"],
     };
     return actionMap[name] || ["execute"];
   }

@@ -131,7 +131,10 @@ export async function handleRequest(input: string): Promise<AgentResponse> {
     }
   }
 
-  return buildResponse(requestId, status, mergedData, results, startTime);
+  // Propagate the first x402 payment made (if any) to the response meta.
+  const paymentResult = results.find((r) => r.paymentMade);
+
+  return buildResponse(requestId, status, mergedData, results, startTime, paymentResult?.paymentMade);
 }
 
 // Handles both getPrice format ({ bitcoin: { usd: number } })
@@ -153,6 +156,7 @@ function buildResponse(
   data: Record<string, unknown>,
   results: ConnectorResult[],
   startTime: number,
+  paymentMade?: { amount: string; currency: string },
 ): AgentResponse {
   return {
     requestId,
@@ -162,6 +166,9 @@ function buildResponse(
       sources: results.filter((r) => r.success).map((r) => r.connector),
       cached: results.some((r) => r.cached),
       latencyMs: Math.round(performance.now() - startTime),
+      ...(paymentMade
+        ? { cost: { amount: paymentMade.amount, currency: "USDC" as const, paid: true } }
+        : {}),
     },
   };
 }

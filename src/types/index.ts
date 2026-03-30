@@ -9,6 +9,7 @@ export interface ResponseMeta {
   sources: string[];
   cached: boolean;
   latencyMs: number;
+  cost?: { amount: string; currency: "USDC"; paid: boolean };
 }
 
 export interface PlannerResult {
@@ -27,7 +28,7 @@ export interface ConnectorConfig {
   name: string;
   description: string;
   baseUrl: string;
-  authType: "none" | "api_key" | "bearer";
+  authType: "none" | "api_key" | "bearer" | "x402";
   cost: "free" | "paid";
   timeoutMs: number;
   cacheTtlSeconds: number;
@@ -40,6 +41,7 @@ export interface ConnectorResult {
   cached: boolean;
   latencyMs: number;
   error?: string;
+  paymentMade?: { amount: string; currency: string };
 }
 
 export interface IConnector {
