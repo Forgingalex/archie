@@ -216,7 +216,10 @@ export class PaidDataConnector implements IConnector {
   // ── Self-hosted fallback (getData action) ─────────────────────────────────
 
   private async callSelfHosted(start: number): Promise<ConnectorResult> {
-    const url = `http://localhost:${config.port}/paid/market-intel`;
+    const base = config.vercelUrl
+      ? `https://${config.vercelUrl}`
+      : `http://localhost:${config.port}`;
+    const url = `${base}/paid/market-intel`;
     console.log(`[paiddata] self-hosted x402 request — ${url}`);
 
     try {
