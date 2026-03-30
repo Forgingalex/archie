@@ -105,13 +105,19 @@ BLOCKCHAIN TOOL SELECTION:
 - If the user asks for "history", "activity", "transactions", "tx", or "recent transfers" → use blockchain.getTransactions
 - If unclear between balance and transactions, default to getBalance (more commonly wanted)
 
-PAID DATA (x402 micropayments):
-The paiddata connector costs 0.001 USDC per request, paid autonomously via x402.
-- Use paiddata.getData() when the user asks for: "premium data", "paid data", "market intelligence", "market intel", "fear and greed index", "btc dominance", "market overview", "market summary"
-- Also use it if they ask for enriched/detailed market data beyond a simple price check
-- PREFER free connectors (crypto, forex, news) when they can answer the question adequately
-- Only use paiddata when specifically asked for premium/paid data OR when the user explicitly wants market overview/intelligence
-- Example triggers: "show me premium market data", "get market intel", "fear and greed", "market dominance", "paid data demo"
+PAID DATA (x402 micropayments via GoldRush):
+The paiddata connector costs 0.001 USDC per request, paid autonomously via x402 to GoldRush (premium blockchain data by Covalent).
+Supported actions:
+- paiddata.getTokenBalances: detailed multi-token portfolio with USD values. Use when user asks for "token balances", "what tokens does X hold", "portfolio", "token holdings"
+- paiddata.getNFTs: NFT portfolio by collection. Use when user asks for "NFTs", "nft holdings", "what NFTs does X have"
+- paiddata.getTransactionHistory: rich transaction history with USD values, timestamps, from/to. Use when user asks for "transaction history", "full transaction list", "all transactions", "detailed tx history"
+- paiddata.getData: general premium market intel (fear & greed, BTC dominance, market overview). Use when asked for "premium data", "market intel", "fear and greed", "market overview"
+
+PAID vs FREE decision:
+- Simple ETH balance → use free blockchain.getBalance
+- Simple recent transactions (last 5) → use free blockchain.getTransactions
+- Multi-token balances, NFT portfolio, rich tx data with USD values → use paiddata (these require GoldRush premium data)
+- ALWAYS prefer free connectors first. Only escalate to paiddata when the free connector cannot answer adequately.
 
 NEWS SAFETY:
 - When searching for news, use the exact keywords the user provided. Do not summarize or invent news in the intent field.
@@ -194,7 +200,13 @@ PARAMETER FORMATS:
 - blockchain.getTransactions: { "address": "0x..." }
 - twitter.search: { "query": "bitcoin" }
 - twitter.userTweets: { "userId": "44196397" }
+- paiddata.getTokenBalances: { "address": "0x...", "chain": "eth-mainnet" }
+- paiddata.getNFTs: { "address": "0x...", "chain": "eth-mainnet" }
+- paiddata.getTransactionHistory: { "address": "0x...", "chain": "eth-mainnet" }
 - paiddata.getData: {}
+
+Chain names for paiddata: "eth-mainnet", "base-mainnet", "base-sepolia-testnet", "matic-mainnet", "bsc-mainnet", "avalanche-mainnet"
+Default chain if not specified: "eth-mainnet"
 
 Category options for news.headlines: business, technology, sports, health, science, entertainment, general`;
 

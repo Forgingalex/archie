@@ -50,7 +50,7 @@ class ConnectorRegistry {
       news: ["headlines(category)", "search(query)"],
       twitter: ["search(query)", "userTweets(userId)"],
       blockchain: ["getBalance(address)", "getTransactions(address)"],
-      paiddata: ["getData()"],
+      paiddata: ["getTokenBalances(address,chain?)", "getNFTs(address,chain?)", "getTransactionHistory(address,chain?)", "getData()"],
     };
     return actionMap[name] || ["execute"];
   }

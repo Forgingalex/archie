@@ -31,6 +31,9 @@ export const config = {
   // Generate with: npx tsx scripts/generate-wallet.ts
   x402PrivateKey: process.env.X402_PRIVATE_KEY || "",
   x402Network: process.env.X402_NETWORK || "base-sepolia",
+
+  // GoldRush x402 API (by Covalent) — paid blockchain data via x402 micropayments
+  goldrushX402Url: process.env.GOLDRUSH_X402_URL || "https://x402.goldrush.dev",
 } as const;
 
 export function validateConfig(): string[] {

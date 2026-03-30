@@ -792,7 +792,12 @@ body {
     const handled = new Set(errorKeys);
 
     if (data.paiddata && typeof data.paiddata === 'object') {
-      sections.push({ label: 'market intel', html: buildPaidData(data.paiddata), isText: false });
+      const pd = data.paiddata;
+      const pdLabel = Array.isArray(pd.tokens) ? 'token balances'
+                    : Array.isArray(pd.collections) ? 'nft portfolio'
+                    : Array.isArray(pd.transactions) ? 'transactions'
+                    : 'market intel';
+      sections.push({ label: pdLabel, html: buildPaidData(pd), isText: false });
       handled.add('paiddata');
     }
 
@@ -888,9 +893,13 @@ body {
 
     // x402 payment indicator
     if (meta.cost && meta.cost.paid) {
+      const provider = meta.cost.provider && meta.cost.provider !== 'self' ? meta.cost.provider : null;
+      const label = provider
+        ? `Paid via x402 to ${provider.charAt(0).toUpperCase() + provider.slice(1)} — ${meta.cost.amount} ${meta.cost.currency}`
+        : `Paid ${meta.cost.amount} ${meta.cost.currency} via x402`;
       const payEl = document.createElement('div');
       payEl.style.cssText = 'font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:6px;opacity:0;transition:opacity 300ms ease 200ms;display:flex;align-items:center;gap:5px;';
-      payEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4.5" stroke="currentColor" stroke-width="1"/><path d="M5 2.5v5M3 4.5l2-2 2 2" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Paid ${escHtml(meta.cost.amount)} ${escHtml(meta.cost.currency)} via x402</span>`;
+      payEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4.5" stroke="currentColor" stroke-width="1"/><path d="M5 2.5v5M3 4.5l2-2 2 2" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${escHtml(label)}</span>`;
       wrap.appendChild(payEl);
       requestAnimationFrame(() => { payEl.style.opacity = '1'; });
     }
@@ -958,11 +967,101 @@ body {
 
   /* ── BUILDERS ─────────────────────────────────────────── */
 
-  // data.paiddata shape: { prices, marketOverview, topMovers, payment }
+  // paiddata dispatcher — routes to the right builder based on shape
   function buildPaidData(d) {
+    if (Array.isArray(d.tokens))       return buildTokenBalances(d);
+    if (Array.isArray(d.collections))  return buildNFTs(d);
+    if (Array.isArray(d.transactions)) return buildTransactions(d);
+    return buildMarketIntel(d);
+  }
+
+  // GoldRush token balances: { address, tokenCount, tokens: [{name,symbol,balance,decimals,valueUsd,priceUsd}] }
+  function buildTokenBalances(d) {
+    const tokens = (d.tokens || []).filter(t => t.symbol !== '?');
+    if (!tokens.length) return `<div class="error-line">x no tokens found</div>`;
+
+    const addrHtml = d.address
+      ? `<div class="chain-addr"><span>${truncAddr(d.address)}</span></div>` : '';
+
+    const rows = tokens.slice(0, 12).map(t => {
+      const bal = t.decimals != null
+        ? (Number(BigInt(t.balance || '0')) / Math.pow(10, t.decimals)).toFixed(4)
+        : String(t.balance ?? '0');
+      const usdStr = t.valueUsd != null
+        ? `<span style="font-family:var(--mono);font-size:11px;color:#555;margin-left:8px">$${Number(t.valueUsd).toLocaleString('en-US',{maximumFractionDigits:2})}</span>`
+        : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+        <span style="font-size:13px;color:#aaa">${escHtml(t.name || t.symbol)}<span style="font-family:var(--mono);font-size:11px;color:#555;margin-left:6px">${escHtml(t.symbol)}</span></span>
+        <span style="font-family:var(--mono);font-size:13px;color:#fff">${escHtml(bal)}${usdStr}</span>
+      </div>`;
+    });
+
+    const more = tokens.length > 12 ? `<div style="font-size:11px;color:#555;margin-top:6px">+${tokens.length - 12} more tokens</div>` : '';
+    return addrHtml + `<div>${rows.join('')}</div>` + more;
+  }
+
+  // GoldRush NFTs: { address, collectionCount, nftCount, collections: [{collectionName,symbol,count,nfts:[{tokenId,name}]}] }
+  function buildNFTs(d) {
+    const cols = d.collections || [];
+    if (!cols.length) return `<div style="color:#555;font-size:13px">No NFTs found for this address.</div>`;
+
+    const addrHtml = d.address
+      ? `<div class="chain-addr"><span>${truncAddr(d.address)}</span></div>` : '';
+
+    const colHtml = cols.slice(0, 8).map(c => {
+      const nftNames = (c.nfts || []).slice(0, 3).map(n =>
+        `<span style="font-family:var(--mono);font-size:10px;color:#555">${escHtml(n.name || '#' + n.tokenId)}</span>`
+      ).join(', ');
+      return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:#aaa">${escHtml(c.collectionName)}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:#fff">${escHtml(String(c.count))} items</span>
+        </div>
+        ${nftNames ? `<div style="margin-top:3px">${nftNames}</div>` : ''}
+      </div>`;
+    });
+
+    const summary = `<div style="font-family:var(--mono);font-size:13px;color:#fff;margin-bottom:10px">${escHtml(String(d.nftCount ?? 0))} NFTs across ${escHtml(String(d.collectionCount ?? 0))} collections</div>`;
+    return addrHtml + summary + `<div>${colHtml.join('')}</div>`;
+  }
+
+  // GoldRush transactions: { address, count, transactions: [{hash,from,to,valueWei,valueUsd,timestamp,successful}] }
+  function buildTransactions(d) {
+    const txns = d.transactions || [];
+    if (!txns.length) return `<div style="color:#555;font-size:13px">No transactions found.</div>`;
+
+    const addrHtml = d.address
+      ? `<div class="chain-addr"><span>${truncAddr(d.address)}</span></div>` : '';
+
+    const rows = txns.slice(0, 10).map(t => {
+      const hash = t.hash ? truncAddr(t.hash) : '—';
+      const direction = t.from && d.address && t.from.toLowerCase() === d.address.toLowerCase() ? '↑' : '↓';
+      const dirColor = direction === '↑' ? 'var(--down)' : 'var(--up)';
+      const usdStr = t.valueUsd != null && t.valueUsd > 0
+        ? `$${Number(t.valueUsd).toLocaleString('en-US',{maximumFractionDigits:2})}`
+        : '';
+      const date = t.timestamp ? new Date(t.timestamp).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+      const statusDot = t.successful === false
+        ? `<span style="color:var(--down);margin-left:4px">✗</span>` : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="color:${dirColor};font-weight:bold">${direction}</span>
+          <span style="font-family:var(--mono);color:#666">${escHtml(hash)}${statusDot}</span>
+        </span>
+        <span style="font-family:var(--mono);color:#aaa;text-align:right">
+          ${usdStr ? `<span style="color:#fff">${escHtml(usdStr)}</span> ` : ''}<span style="color:#444">${escHtml(date)}</span>
+        </span>
+      </div>`;
+    });
+
+    const more = txns.length > 10 ? `<div style="font-size:11px;color:#555;margin-top:6px">Showing 10 of ${txns.length} transactions</div>` : '';
+    return addrHtml + `<div>${rows.join('')}</div>` + more;
+  }
+
+  // Self-hosted premium market intel: { prices, marketOverview, topMovers }
+  function buildMarketIntel(d) {
     const parts = [];
 
-    // Prices
     if (d.prices && typeof d.prices === 'object') {
       const rows = Object.entries(d.prices).map(([coin, info]) => {
         if (!info || typeof info !== 'object') return '';
@@ -984,7 +1083,6 @@ body {
       if (rows.length) parts.push(`<div style="border-bottom:1px solid rgba(255,255,255,0.04);margin-bottom:12px">${rows.join('')}</div>`);
     }
 
-    // Market Overview
     const ov = d.marketOverview;
     if (ov && typeof ov === 'object') {
       const fgi = ov.fearGreedIndex;
@@ -997,13 +1095,12 @@ body {
       if (overviewRows.length) parts.push(`<div>${overviewRows.join('')}</div>`);
     }
 
-    // Top Movers
     if (Array.isArray(d.topMovers) && d.topMovers.length) {
       const movers = d.topMovers.map(m => {
         const pct = Number(m.change24h ?? 0);
         const cls = pct >= 0 ? 'up' : 'down';
         const arr = pct >= 0 ? '↑' : '↓';
-        return `<span style="font-family:var(--mono);font-size:12px;margin-right:14px">${escHtml(m.symbol)} <span class="coin-change ${cls}" style="margin-left:2px">${arr}${Math.abs(pct).toFixed(1)}%</span></span>`;
+        return `<span style="font-family:var(--mono);font-size:12px;margin-right:14px">${escHtml(m.symbol)} <span class="coin-change ${cls}">${arr}${Math.abs(pct).toFixed(1)}%</span></span>`;
       });
       parts.push(`<div style="margin-top:10px">${movers.join('')}</div>`);
     }

@@ -156,7 +156,7 @@ function buildResponse(
   data: Record<string, unknown>,
   results: ConnectorResult[],
   startTime: number,
-  paymentMade?: { amount: string; currency: string },
+  paymentMade?: { amount: string; currency: string; protocol?: string; provider?: string },
 ): AgentResponse {
   return {
     requestId,
@@ -167,7 +167,7 @@ function buildResponse(
       cached: results.some((r) => r.cached),
       latencyMs: Math.round(performance.now() - startTime),
       ...(paymentMade
-        ? { cost: { amount: paymentMade.amount, currency: "USDC" as const, paid: true } }
+        ? { cost: { amount: paymentMade.amount, currency: "USDC" as const, paid: true, provider: paymentMade.provider } }
         : {}),
     },
   };

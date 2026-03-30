@@ -9,7 +9,7 @@ export interface ResponseMeta {
   sources: string[];
   cached: boolean;
   latencyMs: number;
-  cost?: { amount: string; currency: "USDC"; paid: boolean };
+  cost?: { amount: string; currency: "USDC"; paid: boolean; provider?: string };
 }
 
 export interface PlannerResult {
@@ -41,7 +41,7 @@ export interface ConnectorResult {
   cached: boolean;
   latencyMs: number;
   error?: string;
-  paymentMade?: { amount: string; currency: string };
+  paymentMade?: { amount: string; currency: string; protocol?: string; provider?: string };
 }
 
 export interface IConnector {
