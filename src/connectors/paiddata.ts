@@ -1,17 +1,17 @@
 import { config } from "../config/env.js";
-import { getX402AxiosClient, isX402Configured, getX402WalletAddress } from "../payments/x402.js";
+import { payForResource, isX402Configured, getX402WalletAddress } from "../payments/x402.js";
 import type { ConnectorConfig, ConnectorResult, IConnector } from "../types/index.js";
 
 // GoldRush uses chain names like "eth-mainnet", "base-mainnet", "base-sepolia-testnet"
 const DEFAULT_CHAIN = "eth-mainnet";
 
-// Display amount for x402 payments (GoldRush charges ~0.001 USDC per call on testnet)
+// Display amount for Nanopayments (GoldRush charges ~0.001 USDC per call on testnet)
 const PAYMENT_AMOUNT_DISPLAY = "0.001";
 
 const CONNECTOR_CONFIG: ConnectorConfig = {
   name: "paiddata",
   description:
-    "Premium blockchain data (token balances, NFTs, transaction history) via GoldRush x402 API — costs 0.001 USDC per request paid autonomously in USDC",
+    "Premium blockchain data (token balances, NFTs, transaction history) via GoldRush x402 API — costs 0.001 USDC per request paid autonomously via Circle Nanopayments on Arc Testnet",
   baseUrl: config.goldrushX402Url,
   authType: "x402",
   cost: "paid",
@@ -114,8 +114,8 @@ export class PaidDataConnector implements IConnector {
     if (!isX402Configured()) {
       const walletAddr = getX402WalletAddress();
       return this.failure(
-        `Archie's x402 payment wallet is not configured. ` +
-          `Run: npx tsx scripts/generate-wallet.ts, then fund with USDC on Base Sepolia at https://faucet.circle.com` +
+        `Archie's Nanopayments wallet is not configured. ` +
+          `Run: npx tsx scripts/generate-wallet.ts, then deposit USDC on Arc Testnet via: npm run deposit-gateway` +
           (walletAddr ? ` — wallet: ${walletAddr}` : ""),
         0,
       );
@@ -177,14 +177,13 @@ export class PaidDataConnector implements IConnector {
     start: number,
   ): Promise<ConnectorResult> {
     const url = `${config.goldrushX402Url}${path}`;
-    console.log(`[paiddata] GoldRush x402 request — ${url}`);
+    console.log(`[paiddata] GoldRush Nanopayment request — ${url}`);
 
     try {
-      const client = getX402AxiosClient();
-      const response = await client.get<GoldRushResponse>(url);
+      const result = await payForResource<GoldRushResponse>(url);
       const latencyMs = Math.round(performance.now() - start);
 
-      const raw = response.data;
+      const raw = result.data;
       if (raw.error) {
         return this.failure(
           `GoldRush API error: ${raw.error_message ?? "unknown error"}`,
@@ -192,7 +191,7 @@ export class PaidDataConnector implements IConnector {
         );
       }
 
-      console.log(`[paiddata] GoldRush payment successful — ${PAYMENT_AMOUNT_DISPLAY} USDC via x402 in ${latencyMs}ms`);
+      console.log(`[paiddata] GoldRush Nanopayment successful — ${result.amount} USDC on Arc Testnet in ${latencyMs}ms — tx: ${result.transaction}`);
 
       return {
         connector: "paiddata",
@@ -201,7 +200,7 @@ export class PaidDataConnector implements IConnector {
         cached: false,
         latencyMs,
         paymentMade: {
-          amount: PAYMENT_AMOUNT_DISPLAY,
+          amount: result.amount || PAYMENT_AMOUNT_DISPLAY,
           currency: "USDC",
           protocol: "x402",
           provider: "goldrush",
@@ -220,23 +219,22 @@ export class PaidDataConnector implements IConnector {
       ? `https://${config.vercelUrl}`
       : `http://localhost:${config.port}`;
     const url = `${base}/paid/market-intel`;
-    console.log(`[paiddata] self-hosted x402 request — ${url}`);
+    console.log(`[paiddata] self-hosted Nanopayment request — ${url}`);
 
     try {
-      const client = getX402AxiosClient();
-      const response = await client.get<Record<string, unknown>>(url);
+      const result = await payForResource<Record<string, unknown>>(url);
       const latencyMs = Math.round(performance.now() - start);
 
-      console.log(`[paiddata] self-hosted payment successful — ${PAYMENT_AMOUNT_DISPLAY} USDC via x402 in ${latencyMs}ms`);
+      console.log(`[paiddata] self-hosted Nanopayment successful — ${result.amount} USDC on Arc Testnet in ${latencyMs}ms`);
 
       return {
         connector: "paiddata",
         success: true,
-        data: response.data as Record<string, unknown>,
+        data: result.data,
         cached: false,
         latencyMs,
         paymentMade: {
-          amount: PAYMENT_AMOUNT_DISPLAY,
+          amount: result.amount || PAYMENT_AMOUNT_DISPLAY,
           currency: "USDC",
           protocol: "x402",
           provider: "self",
@@ -254,9 +252,9 @@ export class PaidDataConnector implements IConnector {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.toLowerCase().includes("insufficient") || msg.toLowerCase().includes("balance")) {
       const addr = getX402WalletAddress() ?? "unknown";
-      return `Payment wallet needs USDC. Fund address ${addr} on Base Sepolia at https://faucet.circle.com`;
+      return `Gateway wallet needs USDC on Arc Testnet. Fund address ${addr} via: npm run deposit-gateway`;
     }
-    return `x402 paid request failed: ${msg}`;
+    return `Nanopayment request failed: ${msg}`;
   }
 
   private failure(error: string, latencyMs: number): ConnectorResult {

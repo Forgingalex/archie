@@ -22,10 +22,11 @@
   "license": "MIT",
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "^6.0.0",
+    "@circle-fin/x402-batching": "^2.0.4",
     "@fastify/cors": "^10.0.0",
     "@fastify/rate-limit": "^10.0.0",
     "@fastify/static": "^9.0.0",
-    "@x402/axios": "^2.8.0",
+    "@x402/core": "^2.8.0",
     "@x402/evm": "^2.8.0",
     "axios": "^1.7.0",
     "dotenv": "^16.4.0",

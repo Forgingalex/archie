@@ -1,8 +1,5 @@
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
-import axios, { type AxiosInstance } from "axios";
-import { privateKeyToAccount } from "viem/accounts";
-import { x402Client, wrapAxiosWithPayment } from "@x402/axios";
-import { registerExactEvmScheme } from "@x402/evm/exact/client";
+import { GatewayClient } from "@circle-fin/x402-batching/client";
 import { config } from "../config/env.js";
 import type { PaymentEvent } from "../types/index.js";
 
@@ -121,69 +118,85 @@ export async function handleX402Payment(
   return { requestId, connector, amount, currency, txHash: null, paid: false, timestamp };
 }
 
-// ── EOA x402 Payment Client (autonomous micropayments) ─────────────────────
+// ── Circle Nanopayments Gateway Client ─────────────────────────────────────
+// Pays for x402-protected resources with USDC on Arc Testnet via Circle's
+// Gateway batching protocol. Settlement is handled by Circle's facilitator.
 
-// Lazily initialized — built on first call to getX402AxiosClient().
-let _x402Client: AxiosInstance | null = null;
-let _x402WalletAddress: string | null = null;
+let _gatewayClient: GatewayClient | null = null;
 
 /**
- * Returns true if the EOA x402 payment wallet is configured.
+ * Returns true if the Nanopayments wallet is configured.
  */
 export function isX402Configured(): boolean {
   return config.x402PrivateKey.length > 0;
 }
 
 /**
- * The EOA wallet address used for x402 payments.
+ * Returns a lazily-initialized GatewayClient for Arc Testnet.
+ * Throws if X402_PRIVATE_KEY is not set.
+ */
+export function getGatewayClient(): GatewayClient {
+  if (!isX402Configured()) {
+    throw new Error("X402_PRIVATE_KEY is not configured. Run: npx tsx scripts/generate-wallet.ts");
+  }
+  if (_gatewayClient) return _gatewayClient;
+
+  _gatewayClient = new GatewayClient({
+    chain: "arcTestnet",
+    privateKey: config.x402PrivateKey as `0x${string}`,
+  });
+
+  console.log(`[x402] GatewayClient ready — wallet: ${_gatewayClient.address} — chain: arcTestnet`);
+  return _gatewayClient;
+}
+
+/**
+ * The EOA wallet address used for Nanopayments.
  * Null if X402_PRIVATE_KEY is not set.
  */
 export function getX402WalletAddress(): string | null {
   if (!isX402Configured()) return null;
-  if (_x402WalletAddress) return _x402WalletAddress;
-
   try {
-    const account = privateKeyToAccount(config.x402PrivateKey as `0x${string}`);
-    _x402WalletAddress = account.address;
-    return _x402WalletAddress;
+    return getGatewayClient().address;
   } catch {
     return null;
   }
 }
 
 /**
- * Returns an axios instance that automatically handles x402 (HTTP 402) payment
- * challenges using the configured EOA wallet.
- *
- * On receiving a 402, the interceptor:
- *   1. Parses the PAYMENT-REQUIRED header for payment details
- *   2. Signs an EIP-3009 transferWithAuthorization using the EOA wallet
- *   3. Retries the request with the X-PAYMENT header attached
- *
- * Throws if X402_PRIVATE_KEY is not configured.
+ * Pays for an x402-protected resource using Circle Nanopayments on Arc Testnet.
+ * Handles the full 402 → sign → retry flow automatically via GatewayClient.
  */
-export function getX402AxiosClient(): AxiosInstance {
-  if (!isX402Configured()) {
-    throw new Error("X402_PRIVATE_KEY is not configured. Run: npx tsx scripts/generate-wallet.ts");
-  }
+export async function payForResource<T = unknown>(
+  url: string,
+): Promise<{ data: T; amount: string; transaction: string }> {
+  const client = getGatewayClient();
+  const result = await client.pay<T>(url);
+  return {
+    data: result.data,
+    amount: result.formattedAmount,
+    transaction: result.transaction,
+  };
+}
 
-  if (_x402Client) return _x402Client;
+/**
+ * Deposits USDC into the Circle Gateway Wallet on Arc Testnet.
+ * Run once via: npm run deposit-gateway
+ */
+export async function depositToGateway(amount: string): Promise<void> {
+  const client = getGatewayClient();
+  const result = await client.deposit(amount);
+  console.log(`[x402] deposited ${result.formattedAmount} USDC to Gateway — tx: ${result.depositTxHash}`);
+}
 
-  const account = privateKeyToAccount(config.x402PrivateKey as `0x${string}`);
-  _x402WalletAddress = account.address;
-
-  // Build the x402 client and register the EVM payment scheme.
-  // registerExactEvmScheme handles both v1 and v2 of the protocol,
-  // and registers for all supported EVM networks including base-sepolia.
-  const client = new x402Client();
-  registerExactEvmScheme(client, { signer: account });
-
-  // Wrap a fresh axios instance so 402 responses are handled transparently.
-  const axiosInstance = axios.create({ timeout: 15_000 });
-  wrapAxiosWithPayment(axiosInstance, client);
-
-  _x402Client = axiosInstance;
-
-  console.log(`[x402] payment client ready — wallet: ${account.address} — network: ${config.x402Network}`);
-  return _x402Client;
+/**
+ * Returns the current wallet and Gateway balances.
+ */
+export async function getGatewayBalance(): Promise<{ wallet: string; gateway: string }> {
+  const client = getGatewayClient();
+  const balances = await client.getBalances();
+  return {
+    wallet: balances.wallet.formatted,
+    gateway: balances.gateway.formattedAvailable,
+  };
 }
