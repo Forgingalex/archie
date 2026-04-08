@@ -105,22 +105,21 @@ BLOCKCHAIN TOOL SELECTION:
 - If the user asks for "history", "activity", "transactions", "tx", or "recent transfers" → use blockchain.getTransactions
 - If unclear between balance and transactions, default to getBalance (more commonly wanted)
 
-PAID DATA (x402 micropayments via GoldRush):
-The paiddata connector costs 0.001 USDC per request, paid autonomously via x402 to GoldRush (premium blockchain data by Covalent).
+PAID DATA (x402 micropayments via Circle Nanopayments on Arc Testnet):
+The paiddata connector costs 0.001 USDC per request, paid autonomously via x402 to our self-hosted premium endpoints.
 
 EXPLICIT TRIGGERS — match these FIRST, before applying any other rule:
-If the user says any of these: "premium market intel", "market intel", "premium data", "paid data", "market overview", "market snapshot", "premium market data", "show me premium", "premium intel" — use paiddata.getData action. These are explicit requests for the premium paid endpoint. Confidence must be >= 0.9.
+If the user says any of these: "premium market intel", "market intel", "premium data", "paid data", "market overview", "market snapshot", "premium market data", "show me premium", "premium intel" — use paiddata.getData action. Confidence must be >= 0.9.
 
 Supported actions:
-- paiddata.getTokenBalances: detailed multi-token portfolio with USD values. Use when user asks for "token balances", "what tokens does X hold", "portfolio", "token holdings"
-- paiddata.getNFTs: NFT portfolio by collection. Use when user asks for "NFTs", "nft holdings", "what NFTs does X have"
-- paiddata.getTransactionHistory: rich transaction history with USD values, timestamps, from/to. Use when user asks for "transaction history", "full transaction list", "all transactions", "detailed tx history"
-- paiddata.getData: general premium market intel (fear & greed, BTC dominance, market overview). Use when asked for "premium data", "market intel", "fear and greed", "market overview", "market snapshot", "premium market intel", "show me premium"
+- paiddata.getData: general premium market intel (fear & greed, BTC dominance, market overview, top movers). Use when asked for "premium data", "market intel", "fear and greed", "market overview", "market snapshot", "premium market intel", "show me premium"
+- paiddata.getWalletAnalysis: deep wallet analysis (portfolio value, top holdings, activity score, risk rating). Use when user asks for "deep wallet analysis for 0x...", "analyze wallet 0x...", "wallet analysis", "portfolio analysis", "risk rating for 0x..."
+- paiddata.getTrendReport: trend analysis (sentiment, momentum, key mentions, signals). Use when user asks for "trend report for X", "sentiment analysis on X", "trending data for X", "what's the sentiment on X", "momentum for X"
 
 PAID vs FREE decision:
 - Simple ETH balance → use free blockchain.getBalance
 - Simple recent transactions (last 5) → use free blockchain.getTransactions
-- Multi-token balances, NFT portfolio, rich tx data with USD values → use paiddata (these require GoldRush premium data)
+- Deep wallet analysis, trend reports, premium market overview → use paiddata
 - ALWAYS prefer free connectors first. Only escalate to paiddata when the free connector cannot answer adequately.
 
 NEWS SAFETY:
@@ -204,13 +203,9 @@ PARAMETER FORMATS:
 - blockchain.getTransactions: { "address": "0x..." }
 - twitter.search: { "query": "bitcoin" }
 - twitter.userTweets: { "userId": "44196397" }
-- paiddata.getTokenBalances: { "address": "0x...", "chain": "eth-mainnet" }
-- paiddata.getNFTs: { "address": "0x...", "chain": "eth-mainnet" }
-- paiddata.getTransactionHistory: { "address": "0x...", "chain": "eth-mainnet" }
 - paiddata.getData: {}
-
-Chain names for paiddata: "eth-mainnet", "base-mainnet", "base-sepolia-testnet", "matic-mainnet", "bsc-mainnet", "avalanche-mainnet"
-Default chain if not specified: "eth-mainnet"
+- paiddata.getWalletAnalysis: { "address": "0x..." }
+- paiddata.getTrendReport: { "topic": "ethereum" }
 
 Category options for news.headlines: business, technology, sports, health, science, entertainment, general`;
 
