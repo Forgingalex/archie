@@ -56,9 +56,11 @@ export class PaidDataConnector implements IConnector {
   // ── Self-hosted call ──────────────────────────────────────────────────────
 
   private async callSelfHosted(path: string, start: number): Promise<ConnectorResult> {
-    const base = config.vercelUrl
-      ? `https://${config.vercelUrl}`
-      : `http://localhost:${config.port}`;
+    const base = config.vercelProductionUrl
+      ? `https://${config.vercelProductionUrl}`
+      : config.vercelUrl
+        ? `https://${config.vercelUrl}`
+        : `http://localhost:${config.port}`;
     const url = `${base}${path}`;
     console.log(`[paiddata] self-hosted Nanopayment request — ${url}`);
 

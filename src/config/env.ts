@@ -36,7 +36,10 @@ export const config = {
   // GoldRush x402 API (by Covalent) — paid blockchain data via x402 micropayments
   goldrushX402Url: process.env.GOLDRUSH_X402_URL || "https://x402.goldrush.dev",
 
-  // Vercel deployment URL — set automatically by Vercel, used to avoid localhost self-calls
+  // Vercel deployment URLs — set automatically by Vercel.
+  // VERCEL_PROJECT_PRODUCTION_URL is the stable production domain (no auth wall).
+  // VERCEL_URL is the preview deployment URL (may be behind Vercel auth).
+  vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL || "",
   vercelUrl: process.env.VERCEL_URL || "",
 } as const;
 
