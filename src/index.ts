@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { config, validateConfig } from "./config/env.js";
 import { registerRoutes } from "./gateway/router.js";
 import { registerPaidRoutes } from "./gateway/paid-routes.js";
+import { registerStatusRoutes } from "./gateway/status-routes.js";
 import { initWallet } from "./payments/x402.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,7 @@ async function main() {
 
   await registerRoutes(app);
   await registerPaidRoutes(app);
+  await registerStatusRoutes(app);
 
   try {
     await app.listen({ port: config.port, host: "0.0.0.0" });

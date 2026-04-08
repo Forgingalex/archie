@@ -172,6 +172,49 @@ body {
   50%       { transform: scale(1.4); opacity: 0.4; }
 }
 
+#net-dot.connected    { background: var(--up); animation: net-pulse 2s ease-in-out infinite; }
+#net-dot.disconnected { background: var(--down); animation: none; }
+
+#gateway-bal {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #3a3a3a;
+  transition: color 400ms ease;
+}
+
+/* ── REPUTATION TOAST ────────────────────────────────────── */
+
+#rep-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  background: rgba(10,10,10,0.96);
+  border: 1px solid #FF8A00;
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 240px;
+  max-width: 300px;
+  text-decoration: none;
+  display: block;
+  transform: translateX(calc(100% + 32px));
+  opacity: 0;
+  transition: transform 380ms var(--ease), opacity 380ms ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,138,0,0.12);
+  cursor: pointer;
+}
+
+#rep-toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+#rep-toast.hide {
+  transform: translateX(calc(100% + 32px));
+  opacity: 0;
+  transition: transform 380ms var(--ease), opacity 300ms ease 80ms;
+}
+
 /* ── TERMINAL BODY ───────────────────────────────────────── */
 
 #body {
@@ -569,6 +612,18 @@ body {
   <div id="bg-overlay"></div>
 </div>
 
+<!-- REPUTATION TOAST -->
+<a id="rep-toast" href="https://testnet.arcscan.app" target="_blank" rel="noopener">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+      <circle cx="7" cy="7" r="6.5" stroke="#FF8A00" stroke-width="1"/>
+      <path d="M4.5 7l2 2 3-3" stroke="#FF8A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span style="font-family:var(--mono);font-size:12px;color:#fff;font-weight:500">Reputation recorded on Arc</span>
+  </div>
+  <div style="font-family:var(--mono);font-size:11px;color:#555">Agent #941 — view on explorer</div>
+</a>
+
 <!-- VIEWPORT -->
 <div id="viewport">
   <div id="terminal">
@@ -582,8 +637,9 @@ body {
       </div>
       <div id="title-center">Archie</div>
       <div id="title-right">
+        <span id="gateway-bal"></span>
         <span>Arc Testnet</span>
-        <div id="net-dot"></div>
+        <div id="net-dot" title="Checking Arc Testnet..."></div>
       </div>
     </div>
 
@@ -738,6 +794,11 @@ body {
     loadEl.remove();
     await renderResponse(json, exchange);
     glowTitle();
+
+    if (json.meta && json.meta.cost && json.meta.cost.paid) {
+      showRepToast();
+      fetchGatewayBalance();
+    }
 
     busy = false;
     queryInp.placeholder = 'ask anything...';
@@ -1279,6 +1340,72 @@ body {
   /* ── SCROLL ───────────────────────────────────────────── */
   function scrollDown() {
     setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50);
+  }
+
+  /* ── GATEWAY BALANCE ─────────────────────────────────── */
+  var gatewayBalEl = document.getElementById('gateway-bal');
+
+  function fetchGatewayBalance() {
+    fetch('/gateway-balance').then(function(r) {
+      return r.ok ? r.json() : null;
+    }).then(function(d) {
+      if (!d || !gatewayBalEl) return;
+      var val = d.available || d.balance || null;
+      if (val && val !== '—') {
+        var num = parseFloat(val);
+        gatewayBalEl.textContent = 'Gateway: ' + (isNaN(num) ? val : num.toFixed(3)) + ' USDC';
+        gatewayBalEl.style.color = '#444';
+      }
+    }).catch(function() {});
+  }
+
+  fetchGatewayBalance();
+  setInterval(fetchGatewayBalance, 10_000);
+
+  /* ── ARC STATUS ───────────────────────────────────────── */
+  var netDot = document.getElementById('net-dot');
+
+  function fetchArcStatus() {
+    fetch('/arc-status').then(function(r) {
+      return r.ok ? r.json() : null;
+    }).then(function(d) {
+      if (!d || !netDot) return;
+      if (d.connected) {
+        netDot.classList.remove('disconnected');
+        netDot.classList.add('connected');
+        netDot.title = d.blockNumber
+          ? 'Arc Testnet · block #' + d.blockNumber
+          : 'Arc Testnet · connected';
+      } else {
+        netDot.classList.remove('connected');
+        netDot.classList.add('disconnected');
+        netDot.title = 'Arc Testnet · disconnected';
+      }
+    }).catch(function() {
+      if (!netDot) return;
+      netDot.classList.remove('connected');
+      netDot.classList.add('disconnected');
+      netDot.title = 'Arc Testnet · unreachable';
+    });
+  }
+
+  fetchArcStatus();
+  setInterval(fetchArcStatus, 30_000);
+
+  /* ── REPUTATION TOAST ─────────────────────────────────── */
+  var repToast = document.getElementById('rep-toast');
+  var repToastTimer = null;
+
+  function showRepToast() {
+    if (!repToast) return;
+    if (repToastTimer) clearTimeout(repToastTimer);
+    repToast.classList.remove('hide');
+    repToast.classList.add('show');
+    repToastTimer = setTimeout(function() {
+      repToast.classList.remove('show');
+      repToast.classList.add('hide');
+      repToastTimer = null;
+    }, 6_000);
   }
 
   /* ── AGENT INFO ───────────────────────────────────────── */

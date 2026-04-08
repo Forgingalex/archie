@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import { config, validateConfig } from "../src/config/env.js";
 import { registerRoutes } from "../src/gateway/router.js";
 import { registerPaidRoutes } from "../src/gateway/paid-routes.js";
+import { registerStatusRoutes } from "../src/gateway/status-routes.js";
 import { initWallet } from "../src/payments/x402.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +40,7 @@ function buildApp(): Promise<FastifyInstance> {
 
     await registerRoutes(app);
     await registerPaidRoutes(app);
+    await registerStatusRoutes(app);
     await app.ready();
 
     return app;
