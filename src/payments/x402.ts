@@ -23,9 +23,9 @@ export interface InitWalletResult {
   validatorWallet: WalletInfo;
 }
 
-// Creates a wallet set named "archie-agent" and two SCA wallets.
-// The agent wallet handles x402 micropayments; the validator wallet signs
-// ERC-8004 reputation events on Arc.
+// Creates a wallet set named "archie-agent" and two SCA wallets on first run.
+// On subsequent starts, if ARC_AGENT_WALLET_ID and ARC_VALIDATOR_WALLET_ID are
+// set in env, reuses the existing wallets instead of creating new ones.
 export async function initWallet(): Promise<InitWalletResult | null> {
   const client = getCircleClient();
   if (!client) {
@@ -33,6 +33,37 @@ export async function initWallet(): Promise<InitWalletResult | null> {
     return null;
   }
 
+  // ── Reuse existing wallets if IDs are already configured ──────────────────
+  if (config.arcAgentWalletId && config.arcValidatorWalletId) {
+    console.log("[circle] reusing existing wallets from env");
+    try {
+      const [{ data: agentData }, { data: validatorData }] = await Promise.all([
+        client.getWallet({ id: config.arcAgentWalletId }),
+        client.getWallet({ id: config.arcValidatorWalletId }),
+      ]);
+
+      const agentAddress = agentData?.wallet?.address;
+      const validatorAddress = validatorData?.wallet?.address;
+
+      if (!agentAddress) throw new Error(`Could not fetch address for agent wallet ${config.arcAgentWalletId}`);
+      if (!validatorAddress) throw new Error(`Could not fetch address for validator wallet ${config.arcValidatorWalletId}`);
+
+      const agentWallet: WalletInfo = { id: config.arcAgentWalletId, address: agentAddress };
+      const validatorWallet: WalletInfo = { id: config.arcValidatorWalletId, address: validatorAddress };
+
+      console.log(`[circle] agent wallet:     ${agentWallet.address}  (id: ${agentWallet.id})`);
+      console.log(`[circle] validator wallet: ${validatorWallet.address}  (id: ${validatorWallet.id})`);
+
+      return { agentWallet, validatorWallet };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[circle] initWallet (reuse) failed: ${msg}`);
+      return null;
+    }
+  }
+
+  // ── First-time setup: create a new wallet set and two wallets ─────────────
+  console.log("[circle] creating new wallet set (ARC_AGENT_WALLET_ID / ARC_VALIDATOR_WALLET_ID not set)");
   try {
     const { data: wsData } = await client.createWalletSet({
       name: "archie-agent",

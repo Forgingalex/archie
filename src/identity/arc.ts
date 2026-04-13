@@ -159,6 +159,17 @@ export async function recordReputation(
   try {
     console.log(`[arc] recording reputation: agentId=${agentId} score=${score} tag="${tag}"`);
 
+    // Sanity-check: log the actual address of the wallet submitting this tx
+    // so we can verify it matches the funded wallet in the env.
+    try {
+      const { data: vWalletData } = await client.getWallet({ id: config.arcValidatorWalletId });
+      const vAddress = vWalletData?.wallet?.address ?? "(unknown)";
+      console.log(`[arc] validator wallet address: ${vAddress}  (id: ${config.arcValidatorWalletId})`);
+    } catch (walletErr) {
+      const walletMsg = walletErr instanceof Error ? walletErr.message : String(walletErr);
+      console.warn(`[arc] could not fetch validator wallet address: ${walletMsg}`);
+    }
+
     // keccak256 of the tag string, used as the bytes32 identifier
     const tagHash = keccak256(toHex(tag));
 
