@@ -27,7 +27,18 @@ export class CryptoConnector extends BaseConnector {
     const timer = this.timed();
     try {
       const ids = (params.coins as string) || "bitcoin";
-      const currencies = (params.currencies as string) || "usd";
+
+      // Always include "usd" so the USD price is available for forex chaining.
+      // If the planner passed a non-USD currency (e.g. "ngn"), we merge it in
+      // so CoinGecko still returns the usd field.
+      const requested = ((params.currencies as string) || "usd").toLowerCase();
+      const currencySet = new Set(requested.split(",").map((c) => c.trim()).filter(Boolean));
+      currencySet.add("usd");
+      const currencies = Array.from(currencySet).join(",");
+
+      if (currencies !== requested && requested !== "usd") {
+        console.warn(`[crypto] currencies param "${requested}" did not include usd — added it to guarantee USD fallback`);
+      }
 
       const { data } = await this.http.get("/simple/price", {
         params: {
@@ -40,6 +51,9 @@ export class CryptoConnector extends BaseConnector {
 
       const shaped: Record<string, unknown> = {};
       for (const [coinId, coinData] of Object.entries(data as Record<string, Record<string, number>>)) {
+        if (!coinData.usd) {
+          console.warn(`[crypto] usd field missing for ${coinId} — response keys: ${Object.keys(coinData).join(", ")}`);
+        }
         shaped[coinId] = {
           usd: coinData.usd ?? 0,
           usd_24h_change: coinData.usd_24h_change ?? 0,
