@@ -58,12 +58,20 @@ describe("handleRequest — planner edge cases", () => {
     expect(result.data.message).toMatch(/not confident/i);
   });
 
-  it("returns error when planner returns no tools", async () => {
-    mockPlan.mockResolvedValue({ intent: "something", tools: [], confidence: 0.9 });
+  it("returns success with intent as message when confidence >= 0.5 and no tools", async () => {
+    mockPlan.mockResolvedValue({ intent: "Hi! I'm Archie, an AI agent on Arc Network.", tools: [], confidence: 0.9 });
 
-    const result = await handleRequest("something vague");
+    const result = await handleRequest("who are you");
+    expect(result.status).toBe("success");
+    expect(result.data.message).toBe("Hi! I'm Archie, an AI agent on Arc Network.");
+  });
+
+  it("returns error when confidence is between 0.3 and 0.5 and no tools", async () => {
+    mockPlan.mockResolvedValue({ intent: "ambiguous request", tools: [], confidence: 0.4 });
+
+    const result = await handleRequest("something unclear");
     expect(result.status).toBe("error");
-    expect(result.data.message).toMatch(/couldn't determine/i);
+    expect(result.data.message).toMatch(/not sure/i);
   });
 
   it("includes requestId and latencyMs in every response", async () => {

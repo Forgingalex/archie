@@ -5,14 +5,15 @@ import { describe, it, expect } from "vitest";
 import { registry } from "../src/connectors/registry.js";
 
 describe("ConnectorRegistry", () => {
-  it("registers all 5 default connectors", () => {
+  it("registers all 6 default connectors", () => {
     const names = registry.list().map((c) => c.name);
     expect(names).toContain("crypto");
     expect(names).toContain("forex");
     expect(names).toContain("news");
     expect(names).toContain("twitter");
     expect(names).toContain("blockchain");
-    expect(names.length).toBe(5);
+    expect(names).toContain("paiddata");
+    expect(names.length).toBe(6);
   });
 
   it("get() returns the correct connector", () => {
