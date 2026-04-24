@@ -11,7 +11,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --accent: #FF8A00;
+  --accent: #008DFF;
+  --bg-navy: #00162B;
   --up: #22C55E;
   --down: #EF4444;
   --mono: 'JetBrains Mono', 'Courier New', monospace;
@@ -26,7 +27,7 @@ html, body {
 
 body {
   font-family: var(--sans);
-  background: #000;
+  background: var(--bg-navy);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -47,7 +48,7 @@ body {
 #bg-img {
   position: absolute;
   inset: 0;
-  background: url('bg.jpg') center/cover no-repeat;
+  background: url('dash_background.png') center/cover no-repeat;
 }
 
 #bg-overlay {
@@ -55,10 +56,10 @@ body {
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(0,0,0,0.70) 0%,
-    rgba(0,0,0,0.25) 40%,
-    rgba(0,0,0,0.25) 60%,
-    rgba(0,0,0,0.60) 100%
+    rgba(0, 22, 43, 0.70) 0%,
+    rgba(0, 22, 43, 0.25) 40%,
+    rgba(0, 22, 43, 0.25) 60%,
+    rgba(0, 22, 43, 0.60) 100%
   );
 }
 
@@ -82,12 +83,12 @@ body {
   height: 80vh;
   display: flex;
   flex-direction: column;
-  background: rgba(10,10,10,0.75);
+  background: rgba(0, 22, 43, 0.75);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(0, 141, 255, 0.15);
   border-radius: 12px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0, 141, 255, 0.08);
   overflow: hidden;
   opacity: 0;
   transform: translateY(30px);
@@ -126,7 +127,7 @@ body {
 }
 
 .dot:nth-child(1) { background: #FF5F57; animation: dot-pop 200ms var(--ease) 500ms forwards; }
-.dot:nth-child(2) { background: #FFBD2E; animation: dot-pop 200ms var(--ease) 550ms forwards; }
+.dot:nth-child(2) { background: var(--accent); animation: dot-pop 200ms var(--ease) 550ms forwards; }
 .dot:nth-child(3) { background: #27C93F; animation: dot-pop 200ms var(--ease) 600ms forwards; }
 
 @keyframes dot-pop {
@@ -146,7 +147,7 @@ body {
 }
 
 #title-center.glow {
-  text-shadow: 0 0 8px rgba(255,138,0,0.4);
+  text-shadow: 0 0 8px rgba(0, 141, 255, 0.4);
 }
 
 #title-right {
@@ -156,7 +157,7 @@ body {
   gap: 7px;
   font-family: var(--mono);
   font-size: 12px;
-  color: #525252;
+  color: #5F5F5F;
 }
 
 #net-dot {
@@ -178,7 +179,7 @@ body {
 #gateway-bal {
   font-family: var(--mono);
   font-size: 11px;
-  color: #3a3a3a;
+  color: #5F5F5F;
   transition: color 400ms ease;
 }
 
@@ -190,7 +191,7 @@ body {
   right: 24px;
   z-index: 100;
   background: rgba(10,10,10,0.96);
-  border: 1px solid #FF8A00;
+  border: 1px solid #008DFF;
   border-radius: 10px;
   padding: 12px 16px;
   min-width: 240px;
@@ -200,7 +201,7 @@ body {
   transform: translateX(calc(100% + 32px));
   opacity: 0;
   transition: transform 380ms var(--ease), opacity 380ms ease;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,138,0,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0, 141, 255, 0.12);
   cursor: pointer;
 }
 
@@ -616,12 +617,12 @@ body {
 <a id="rep-toast" href="https://testnet.arcscan.app" target="_blank" rel="noopener">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
-      <circle cx="7" cy="7" r="6.5" stroke="#FF8A00" stroke-width="1"/>
-      <path d="M4.5 7l2 2 3-3" stroke="#FF8A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="7" cy="7" r="6.5" stroke="#008DFF" stroke-width="1"/>
+      <path d="M4.5 7l2 2 3-3" stroke="#008DFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <span style="font-family:var(--mono);font-size:12px;color:#fff;font-weight:500">Reputation recorded on Arc</span>
   </div>
-  <div style="font-family:var(--mono);font-size:11px;color:#555">Agent #941 — view on explorer</div>
+  <div style="font-family:var(--mono);font-size:11px;color:#5F5F5F">Agent #941 — view on explorer</div>
 </a>
 
 <!-- VIEWPORT -->
@@ -1354,7 +1355,7 @@ body {
       if (val && val !== '—') {
         var num = parseFloat(val);
         gatewayBalEl.textContent = 'Gateway: ' + (isNaN(num) ? val : num.toFixed(3)) + ' USDC';
-        gatewayBalEl.style.color = '#444';
+        gatewayBalEl.style.color = '#5F5F5F';
       }
     }).catch(function() {});
   }
